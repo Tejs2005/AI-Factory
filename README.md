@@ -34,6 +34,31 @@ the real world — launch an app, run a shell command, submit a form — it stop
                        └─────────────────────────────┘    gemini, …)
 ```
 
+## What it looks like
+
+**Models tab** — live meters (CPU / RAM / GPU / VRAM), every model as a card, click to
+set default, per-model power switch loads it into VRAM or unloads it:
+
+![models](docs/shots/dashboard-models.png)
+
+**Apps tab** — the registry: every AI engine, studio and connector on the machine,
+start/stop from the browser:
+
+![apps](docs/shots/dashboard-apps.png)
+
+**Chat** — talk to whichever model holds the DEFAULT tag (or pick one per message):
+
+![chat](docs/shots/dashboard-chat.png)
+
+## The bigger picture
+
+The AI you talk to in the tower isn't alone — the workers live in a **walkable
+town** (the Campus): 13 workers with their own models, an operations desk, real
+orders flowing through, every task logged. This is the same laptop, same
+factory:
+
+![campus town](docs/campus-town.gif)
+
 ## What's in the factory
 
 | Piece | What it does |
