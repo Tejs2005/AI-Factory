@@ -290,7 +290,7 @@ async function send(){
       for(const part of parts){const line=part.trim(); if(!line.startsWith('data:'))continue;
         let ev; try{ev=JSON.parse(line.slice(5));}catch{continue;}
         if(ev.type==='token'){out+=ev.text;box.innerHTML=esc(out);$('#chat').scrollTop=1e9;}
-        else if(ev.tower)box.innerHTML='<span class="tag def">'+esc(ev.tower)+'</span>';
+        else if(ev.tower){const t=ev.tower;const lbl=typeof t==='string'?t:[t.provider,t.model].filter(Boolean).join(' · ');box.innerHTML='<span class="tag def">'+esc(lbl)+'</span>'+'<br>';}
         else if(ev.error){box.innerHTML='<span style="color:var(--bad)">✕ '+esc(ev.error)+'</span>';out='';}
       }}
     if(out){hist.push({role:'user',content:p},{role:'assistant',content:out});hist=hist.slice(-12);}

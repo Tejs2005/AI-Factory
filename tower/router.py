@@ -57,12 +57,28 @@ def resolve(model: str | None) -> dict[str, Any] | None:
 
 
 def chain(model: str | None) -> list[dict[str, Any]]:
-    """Ordered candidates: selected, sibling local chat models, cloud."""
+    """Ordered candidates: selected, sibling local chat models, cloud.
+
+    GPU-headroom guard (2026-10-27, seen live): an Ollama model that loads
+    while the GPU is full lands in SYSTEM RAM — penny ate 5.6 GB that way and
+    choked the laptop. So Ollama *fallbacks* are skipped when VRAM headroom
+    is gone; the explicitly selected model (first candidate) is always
+    honored — the user asked for it.
+    """
     first = resolve(model)
     out: list[dict[str, Any]] = [first] if first else []
     seen = {first["model"] if first else None, first["provider"] if first else None}
 
+    from . import metrics
+    g = metrics.gpu()
+    vram_free_mb = None
+    if g.get("present") and g.get("vram_total_mb"):
+        vram_free_mb = g["vram_total_mb"] - g["vram_used_mb"]
+    room_ok = vram_free_mb is None or vram_free_mb > 2500
+
     for m in state.LOCAL_PREFERENCE:            # preferred locals next
+        if not room_ok:
+            break
         if (m, "ollama") in ((c["model"], c["provider"]) for c in out):
             continue
         c = resolve(m)
