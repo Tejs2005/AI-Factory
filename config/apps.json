@@ -1,0 +1,228 @@
+{
+  "apps": [
+    {
+      "id": "ollama",
+      "name": "Ollama",
+      "kind": "service",
+      "category": "AI Engine",
+      "icon": "🦙",
+      "desc": "Tower PRIMARY — local chat/coding models",
+      "check": {
+        "type": "tcp",
+        "target": "http://127.0.0.1:11434"
+      },
+      "start": "systemctl start ollama",
+      "stop_pattern": "ollama serve",
+      "gated": false
+    },
+    {
+      "id": "localai",
+      "name": "LocalAI",
+      "kind": "service",
+      "category": "AI Engine",
+      "icon": "🔷",
+      "desc": "Tower SPECIALTY — bonsai 27B, voice (voxcpm2), video (wan-2.1), 43 MCP tools",
+      "check": {
+        "type": "tcp",
+        "target": "http://127.0.0.1:8080"
+      },
+      "cwd": "./localai",
+      "start": "cd ./localai && nohup ./local-ai run --address 127.0.0.1:8080 >> localai.log 2>&1 &",
+      "stop_pattern": "local-ai run --address 127.0.0.1:8080",
+      "gated": false
+    },
+    {
+      "id": "needle",
+      "name": "Needle 3",
+      "kind": "service",
+      "category": "AI Engine",
+      "icon": "🪡",
+      "desc": "121M on-device tool-calling model — the agent's fast tool router (port 8088)",
+      "check": {
+        "type": "tcp",
+        "target": "http://127.0.0.1:8088"
+      },
+      "cwd": "~/needle3",
+      "start": "cd ~/needle3 && nohup ./needle --model needle3.cact --tools ./config/needle-tools.json --serve --port 8088 >> ./logs/needle.log 2>&1 &",
+      "stop_pattern": "needle --model needle3.cact --serve",
+      "gated": false
+    },
+    {
+      "id": "brain",
+      "name": "VRTX-BRAIN Console",
+      "kind": "service",
+      "category": "Brain",
+      "icon": "🧠",
+      "desc": "The brain's console server (MCP tools) on :8420",
+      "check": {
+        "type": "tcp",
+        "target": "http://127.0.0.1:8420"
+      },
+      "start": "~/VRTX-BRAIN/bin/vrtx-brain",
+      "stop_pattern": "console.app",
+      "gated": true
+    },
+    {
+      "id": "jan",
+      "name": "Jan",
+      "kind": "desktop",
+      "category": "AI App",
+      "icon": "💬",
+      "desc": "Local AI chat app — point it at the tower endpoint",
+      "exec": [
+        "~/apps/jan/jan.AppImage"
+      ],
+      "stop_pattern": "jan.AppImage",
+      "gated": false
+    },
+    {
+      "id": "dyad",
+      "name": "Dyad",
+      "kind": "desktop",
+      "category": "AI App",
+      "icon": "🌊",
+      "desc": "AI app builder",
+      "exec": [
+        "~/apps/dyad/dyad.AppImage"
+      ],
+      "stop_pattern": "dyad.AppImage",
+      "gated": false
+    },
+    {
+      "id": "browseros",
+      "name": "BrowserOS",
+      "kind": "desktop",
+      "category": "Browser",
+      "icon": "🌐",
+      "desc": "AI browser — the agent's eyes for web tasks",
+      "exec": [
+        "~/apps/browseros/browseros.AppImage"
+      ],
+      "stop_pattern": "browseros",
+      "gated": false
+    },
+    {
+      "id": "ruhi",
+      "name": "Ruhi",
+      "kind": "desktop",
+      "category": "AI App",
+      "icon": "🌸",
+      "desc": "Private local AI companion, tutor and coder",
+      "exec": [
+        "~/ruhi/launcher"
+      ],
+      "stop_pattern": "ai-brains/ruhi",
+      "gated": false
+    },
+    {
+      "id": "gimp",
+      "name": "GIMP — Photo Studio",
+      "kind": "desktop",
+      "category": "Studio",
+      "icon": "🎨",
+      "desc": "Photo studio: edit, retouch, compose",
+      "exec": [
+        "gimp"
+      ],
+      "stop_pattern": "gimp",
+      "gated": false
+    },
+    {
+      "id": "obs",
+      "name": "OBS — Video Studio",
+      "kind": "desktop",
+      "category": "Studio",
+      "icon": "🎬",
+      "desc": "Video studio: record, stream, scenes",
+      "exec": [
+        "obs"
+      ],
+      "stop_pattern": "obs",
+      "gated": false
+    },
+    {
+      "id": "audacity",
+      "name": "Audacity — Voice Studio",
+      "kind": "desktop",
+      "category": "Studio",
+      "icon": "🎙️",
+      "desc": "Voice studio: record, cut, master audio",
+      "exec": [
+        "audacity"
+      ],
+      "stop_pattern": "audacity",
+      "gated": false
+    },
+    {
+      "id": "whisper",
+      "name": "Whisper STT",
+      "kind": "tool",
+      "category": "Studio",
+      "icon": "👂",
+      "desc": "Speech to text CLI (vrtx-stt/whisper-cli) — agent transcription",
+      "cmd": "~/vrtx-stt/bin/whisper-cli",
+      "gated": true
+    },
+    {
+      "id": "zcode",
+      "name": "ZCode",
+      "kind": "desktop",
+      "category": "AI App",
+      "icon": "⚡",
+      "desc": "ZCode desktop",
+      "exec": [
+        "/opt/ZCode/zcode"
+      ],
+      "stop_pattern": "/opt/ZCode/zcode",
+      "gated": false
+    },
+    {
+      "id": "connector-gmail",
+      "name": "Gmail",
+      "kind": "connector",
+      "category": "Connectors",
+      "icon": "✉️",
+      "desc": "Mail automation via Gmail API — needs OAuth setup (see docs/awesome-repos.md)",
+      "configured": false,
+      "setup_docs": "docs/awesome-repos.md#connectors",
+      "gated": true
+    },
+    {
+      "id": "connector-youtube",
+      "name": "YouTube",
+      "kind": "connector",
+      "category": "Connectors",
+      "icon": "📺",
+      "desc": "Upload / analytics automation via YouTube Data API — needs API key",
+      "configured": false,
+      "setup_docs": "docs/awesome-repos.md#connectors",
+      "gated": true
+    },
+    {
+      "id": "connector-instagram",
+      "name": "Instagram",
+      "kind": "connector",
+      "category": "Connectors",
+      "icon": "📸",
+      "desc": "Posting / DM automation — needs API or session setup",
+      "configured": false,
+      "setup_docs": "docs/awesome-repos.md#connectors",
+      "gated": true
+    },
+    {
+      "id": "speaches",
+      "name": "speaches (TTS+STT)",
+      "kind": "service",
+      "category": "AI Engine",
+      "icon": "🎙️",
+      "desc": "One CPU podman container: Kokoro TTS (/v1/audio/speech) + faster-whisper STT (/v1/audio/transcriptions) on :8000 — GPU stays with bonsai",
+      "check": {
+        "type": "tcp",
+        "target": "http://127.0.0.1:8000"
+      },
+      "start": "podman start speaches-stt 2>/dev/null || podman run -i --name speaches-stt -p 127.0.0.1:8000:8000 ghcr.io/speaches-ai/speaches:latest-cpu",
+      "stop_pattern": "speaches-stt",
+      "gated": false
+    }
+  ]
+}

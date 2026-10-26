@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Tower</title>
+<style>
+:root{
+  --bg:#0a0d13; --panel:#11151e; --panel2:#161b27; --line:#232a3a;
+  --txt:#dbe2f0; --dim:#8892a8; --acc:#5eead4; --acc2:#7c9cff;
+  --ok:#4ade80; --warn:#fbbf24; --bad:#f87171; --gate:#f472b6;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);
+  font:14px/1.5 ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace}
+header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:14px 20px;border-bottom:1px solid var(--line);background:var(--panel);
+  position:sticky;top:0;z-index:5}
+h1{font-size:17px;margin:0;letter-spacing:.12em;font-weight:700}
+h1 b{color:var(--acc)}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;
+  font-size:11px;background:var(--panel2);border:1px solid var(--line);color:var(--dim)}
+.pill i{width:7px;height:7px;border-radius:50%;background:var(--dim);font-style:normal}
+.pill.on i{background:var(--ok);box-shadow:0 0 7px var(--ok)}
+.pill.off i{background:var(--bad)}
+.pill.slow i{background:var(--warn)}
+nav{display:flex;gap:4px;padding:10px 20px 0;background:var(--panel);border-bottom:1px solid var(--line)}
+nav button{background:none;border:none;color:var(--dim);padding:9px 16px;cursor:pointer;
+  font:inherit;font-size:13px;border-bottom:2px solid transparent}
+nav button.on{color:var(--acc);border-bottom-color:var(--acc)}
+nav button:hover{color:var(--txt)}
+main{padding:20px;max-width:1180px;margin:0 auto}
+.tab{display:none}.tab.on{display:block}
+.grid{display:grid;gap:14px}
+.g3{grid-template-columns:repeat(auto-fill,minmax(255px,1fr))}
+.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card h3{margin:0 0 6px;font-size:14px;display:flex;justify-content:space-between;gap:8px}
+.card .desc{color:var(--dim);font-size:12px}
+.mrow{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--line);
+  border-radius:9px;background:var(--panel2);cursor:pointer;margin-bottom:7px;transition:.12s}
+.mrow:hover{border-color:var(--acc2)}
+.mrow.def{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc) inset;background:#0f1d1c}
+.mrow .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag{font-size:10px;padding:2px 7px;border-radius:5px;background:#1d2433;color:var(--dim);
+  border:1px solid var(--line);white-space:nowrap}
+.tag.def{background:#123330;color:var(--acc);border-color:#1d5a52}
+.tag.ag{background:#1b2340;color:var(--acc2);border-color:#2c3a6b}
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:7px 14px;
+  border-radius:8px;cursor:pointer;font:inherit;font-size:13px}
+.btn:hover{border-color:var(--acc);color:var(--acc)}
+.btn.pri{background:#123330;border-color:#1d5a52;color:var(--acc)}
+.btn.dgr:hover{border-color:var(--bad);color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:wait}
+textarea,input[type=text]{width:100%;background:var(--panel2);border:1px solid var(--line);
+  color:var(--txt);border-radius:9px;padding:11px;font:inherit;font-size:14px;resize:vertical}
+textarea:focus,input:focus{outline:none;border-color:var(--acc2)}
+#chat{height:min(55vh,460px);overflow-y:auto;padding:14px;background:var(--panel2);
+  border:1px solid var(--line);border-radius:11px;margin-bottom:12px;white-space:pre-wrap;
+  word-break:break-word}
+.msg{margin-bottom:13px}
+.msg .who{font-size:11px;color:var(--dim);margin-bottom:3px;letter-spacing:.08em}
+.msg.me .txt{color:#fff}
+.msg.ai .txt{color:var(--acc)}
+.msg.sys .txt{color:var(--dim);font-style:italic}
+.evt{font-size:12px;color:var(--dim);border-left:2px solid var(--acc2);padding:2px 0 2px 9px;margin:5px 0}
+.evt.gate{border-color:var(--gate);color:var(--gate)}
+.evt.good{border-color:var(--ok);color:var(--ok)}
+.evt.bad{border-color:var(--bad);color:var(--bad)}
+.gatebox{background:#241528;border:1px solid var(--gate);border-radius:11px;padding:14px;margin:12px 0}
+.gatebox .q{color:var(--gate);font-weight:700;margin-bottom:7px}
+.gatebox pre{background:#160e19;border:1px solid #3d2340;padding:9px;border-radius:7px;
+  overflow-x:auto;font-size:12px;margin:8px 0;white-space:pre-wrap;word-break:break-word}
+.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.kv{font-size:12px;color:var(--dim)}
+.kv b{color:var(--txt);font-weight:600}
+.bar{height:7px;background:#1d2433;border-radius:5px;overflow:hidden;margin-top:5px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{text-align:left;padding:8px 9px;border-bottom:1px solid var(--line)}
+th{color:var(--dim);font-weight:600;font-size:11px;letter-spacing:.06em}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px}
+.dot.ok{background:var(--ok)}.dot.bad{background:var(--bad)}.dot.warn{background:var(--warn)}
+h2{font-size:13px;letter-spacing:.1em;color:var(--dim);margin:22px 0 11px;text-transform:uppercase}
+h2:first-child{margin-top:0}
+.sw{position:relative;width:38px;height:21px;background:#2a3145;border-radius:999px;cursor:pointer;
+  border:1px solid var(--line);transition:.15s;flex:none}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;
+  background:var(--dim);transition:.15s}
+.sw.on{background:#123330;border-color:var(--acc)}
+.sw.on::after{left:19px;background:var(--acc)}
+.sw.busy{opacity:.45;pointer-events:none}
+.meter{flex:1;min-width:150px}
+.meter .top{display:flex;justify-content:space-between;gap:8px;font-size:11px;
+  letter-spacing:.06em;color:var(--dim);text-transform:uppercase}
+.meter .top b{font-size:13px;color:inherit;text-transform:none;letter-spacing:0}
+.meter .bar{height:7px;background:#232a3b;border:1px solid var(--line);
+  border-radius:99px;overflow:hidden;margin-top:6px}
+.meter .bar i{display:block;height:100%;width:0;background:var(--acc);
+  transition:width .5s;border-radius:99px}
+.meter .bar i.hot{background:var(--warn)}
+.meter .bar i.crit{background:var(--bad)}
+.log{background:#0c0f16;border:1px solid var(--line);border-radius:9px;padding:11px;
+  max-height:300px;overflow-y:auto;font-size:12px;color:var(--dim);white-space:pre-wrap}
+.spin{display:inline-block;width:11px;height:11px;border:2px solid var(--acc2);
+  border-top-color:transparent;border-radius:50%;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+#gatebadge{background:var(--gate);color:#1b0f16;font-weight:700;padding:3px 10px;border-radius:999px;
+  font-size:11px;display:none}
+@media(max-width:720px){.g3,.g2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>AI&nbsp;<b>TOWER</b></h1>
+  <span class="pill" id="p-ollama"><i></i>ollama</span>
+  <span class="pill" id="p-localai"><i></i>localai</span>
+  <span class="pill" id="p-needle"><i></i>needle3</span>
+  <span class="pill" id="p-speech"><i></i>speech</span>
+  <span class="pill" id="p-cloud"><i></i>cloud</span>
+  <span class="pill" id="p-gpu"><i></i>gpu</span>
+  <span id="gatebadge">● approval needed</span>
+  <span style="flex:1"></span>
+  <span class="kv" id="modelnow">—</span>
+</header>
+
+<nav>
+  <button class="on" data-t="chat">💬 Chat</button>
+  <button data-t="agent">🤖 Operator</button>
+  <button data-t="models">🧠 Models</button>
+  <button data-t="apps">🧩 Apps</button>
+  <button data-t="library">📚 Library</button>
+  <button data-t="keys">🔑 Keys</button>
+  <button data-t="logs">📜 Logs</button>
+</nav>
+
+<main>
+<!-- ═══ CHAT ═══ -->
+<section class="tab on" id="t-chat">
+  <div id="chat"><div class="msg sys"><div class="txt">Tower up. Pick a model in Models, then talk.</div></div></div>
+  <div class="row">
+    <input type="text" id="cin" placeholder="Say something…" autocomplete="off" style="flex:1;min-width:200px">
+    <button class="btn pri" id="csend">Send</button>
+    <select class="btn" id="cmodel" style="padding:7px 8px"><option value="">tower default</option></select>
+  </div>
+</section>
+
+<!-- ═══ AGENT ═══ -->
+<section class="tab" id="t-agent">
+  <div class="card">
+    <h3>Operator <span class="tag" id="amode">needle3 → chat</span></h3>
+    <div class="desc">Give it a task. It picks tools, asks you before anything sensitive (launch / stop / shell / non-GET).</div>
+    <div style="margin:11px 0">
+      <textarea id="atin" rows="3" placeholder='e.g. "what models do i have and which engines are up" or "open gimp"'></textarea>
+    </div>
+    <div class="row">
+      <button class="btn pri" id="atgo">▶ Run task</button>
+      <select class="btn" id="amode-sel" style="padding:7px 8px">
+        <option value="auto">engine: auto (needle)</option>
+        <option value="needle">engine: needle only</option>
+        <option value="chat">engine: chat only</option>
+      </select>
+      <span class="kv" id="astatus"></span>
+    </div>
+  </div>
+  <div id="astream" style="margin-top:14px"></div>
+</section>
+
+<!-- ═══ MODELS ═══ -->
+<section class="tab" id="t-models">
+  <div class="card" style="margin-bottom:14px">
+    <h3>Resources <span class="kv" id="reswhen" style="font-weight:400"></span></h3>
+    <div class="row" style="margin-top:10px;gap:16px;flex-wrap:wrap">
+      <div class="meter" id="m-cpu"></div>
+      <div class="meter" id="m-ram"></div>
+      <div class="meter" id="m-gpu"></div>
+      <div class="meter" id="m-vram"></div>
+    </div>
+    <div class="desc" id="resmodels" style="margin-top:10px">—</div>
+  </div>
+  <div class="card" style="margin-bottom:14px">
+    <h3>Fallback to cloud <span class="sw on" id="fbsw"></span></h3>
+    <div class="desc">When local can't answer (or is busy), the tower falls back through groq → openrouter → gemini → nscale → anyapi → cohere.</div>
+  </div>
+  <h2>Models — click to set default · power switch = load into VRAM / unload</h2>
+  <div class="grid g3" id="mlist"></div>
+</section>
+
+<!-- ═══ APPS ═══ -->
+<section class="tab" id="t-apps">
+  <div class="grid g3" id="applist"></div>
+  <h2>Activity</h2>
+  <div class="log" id="applog">—</div>
+</section>
+
+<!-- ═══ LIBRARY ═══ -->
+<section class="tab" id="t-library">
+  <div class="row" style="margin-bottom:13px">
+    <input type="text" id="libq" placeholder="Search 581 skills… e.g. video, plugin, mqtt" style="flex:1;min-width:220px">
+    <select class="btn" id="libcat" style="padding:7px 8px"><option value="">all categories</option></select>
+    <span class="kv" id="libstat"></span>
+  </div>
+  <div class="grid g2">
+    <div>
+      <h2>Skills <span style="text-transform:none">— VRTX-BRAIN/brain/skills</span></h2>
+      <div id="liblist" style="max-height:60vh;overflow-y:auto"></div>
+    </div>
+    <div>
+      <h2>Brain rules <span style="text-transform:none">— VRTX-BRAIN/rules</span></h2>
+      <div id="rulelist" style="max-height:60vh;overflow-y:auto"></div>
+    </div>
+  </div>
+  <div id="libdetail" style="margin-top:14px"></div>
+</section>
+
+<!-- ═══ KEYS ═══ -->
+<section class="tab" id="t-keys">
+  <div class="row" style="margin-bottom:13px">
+    <button class="btn" id="krecheck">↻ Recheck all keys</button>
+    <span class="kv">values are never displayed — masks only</span>
+  </div>
+  <div class="card" style="padding:0;overflow-x:auto">
+    <table id="ktable">
+      <thead><tr><th></th><th>provider</th><th>key</th><th>endpoint</th><th>models</th><th>last check</th><th>note</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ LOGS ═══ -->
+<section class="tab" id="t-logs">
+  <div class="row" style="margin-bottom:12px"><button class="btn" id="lref">↻ Refresh</button></div>
+  <div class="grid g2" id="logbox"></div>
+</section>
+</main>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const j=r=>r.json();
+
+/* ── tabs ── */
+$$('nav button').forEach(b=>b.onclick=()=>{
+  $$('nav button').forEach(x=>x.classList.toggle('on',x===b));
+  $$('.tab').forEach(x=>x.classList.toggle('on',x.id==='t-'+b.dataset.t));
+  if(b.dataset.t==='models')loadModels();
+  if(b.dataset.t==='apps')loadApps();
+  if(b.dataset.t==='keys')loadKeys();
+});
+
+/* ── status polling ── */
+async function status(){
+  try{
+    const s=await fetch('/api/status').then(j);
+    const set=(id,ok,txt)=>{const e=$(id);e.className='pill '+(ok?'on':'off');e.innerHTML='<i></i>'+txt;};
+    set('#p-ollama',s.ollama?.alive,'ollama '+(s.ollama?.alive?'✓':'✗')+' · '+(s.ollama?.models||[]).length+' mdls');
+    set('#p-localai',s.localai?.alive,'localai'+(s.localai?.alive?' ✓':''));
+    set('#p-needle',s.needle?.alive,'needle3');
+    const sp=s.speech?.speaches;
+    set('#p-speech',!!sp?.alive,'speech'+(sp?.alive?' ✓ · '+(sp.models||[]).length+' mdls':' — start in Apps'));
+    const alive=(s.cloud||[]).filter(c=>c.alive).length;
+    set('#p-cloud',alive>0,'cloud '+alive+'/'+(s.cloud||[]).length);
+    const g=s.gpu||{}, frac=g.present&&g.vram_total_mb?g.vram_used_mb/g.vram_total_mb:0;
+    const pe=$('#p-gpu'); pe.className='pill '+(g.present?(frac>.9?'slow':'on'):'off');
+    pe.innerHTML='<i></i>'+(g.present?Math.round(g.vram_used_mb)+'/'+g.vram_total_mb+'MB':'gpu');
+    $('#modelnow').textContent='⚙ '+(s.default_model||'—')+(s.pending_approvals?' · '+s.pending_approvals+' pending':'');
+    $('#gatebadge').style.display=s.pending_approvals?'inline-block':'none';
+    window._st=s;
+  }catch(e){}
+}
+setInterval(status,4000); status();
+
+/* ── chat ── */
+function addMsg(who,cls,html){const d=document.createElement('div');d.className='msg '+cls;
+  d.innerHTML='<div class="who">'+who+'</div><div class="txt">'+html+'</div>';
+  $('#chat').appendChild(d); $('#chat').scrollTop=1e9; return d.querySelector('.txt');}
+let hist=[];
+async function send(){
+  const p=$('#cin').value.trim(); if(!p)return;
+  $('#cin').value=''; addMsg('you','me',esc(p));
+  const box=addMsg('tower','ai','<span class="spin"></span>');
+  let out='';
+  try{
+    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({prompt:p,history:hist,model:$('#cmodel').value||null})});
+    const rd=r.body.getReader(), dec=new TextDecoder(); let buf='';
+    while(1){const {value,done}=await rd.read(); if(done)break;
+      buf+=dec.decode(value,{stream:true});
+      const parts=buf.split('\n\n'); buf=parts.pop();
+      for(const part of parts){const line=part.trim(); if(!line.startsWith('data:'))continue;
+        let ev; try{ev=JSON.parse(line.slice(5));}catch{continue;}
+        if(ev.type==='token'){out+=ev.text;box.innerHTML=esc(out);$('#chat').scrollTop=1e9;}
+        else if(ev.tower)box.innerHTML='<span class="tag def">'+esc(ev.tower)+'</span>';
+        else if(ev.error){box.innerHTML='<span style="color:var(--bad)">✕ '+esc(ev.error)+'</span>';out='';}
+      }}
+    if(out){hist.push({role:'user',content:p},{role:'assistant',content:out});hist=hist.slice(-12);}
+    else box.innerHTML=box.innerHTML.replace('<span class="spin"></span>','<span style="color:var(--bad)">✕ no reply</span>');
+  }catch(e){box.innerHTML='<span style="color:var(--bad)">✕ '+esc(e)+'</span>';}
+}
+$('#csend').onclick=send;
+$('#cin').addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+
+/* ── models ── */
+async function loadModels(){
+  const d=await fetch('/api/models').then(j);
+  $('#fbsw').classList.toggle('on',!!d.fallback_to_cloud);
+  $('#mlist').innerHTML=d.models.map(m=>{
+    const local=m.engine==='ollama';
+    const res=!!m.loaded, keep=!!m.kept_on;
+    let fp='';
+    if(local){
+      if(res)fp='⚡ in VRAM: '+(m.vram_gb!=null?m.vram_gb+' GB':'?')+' vram'+
+        (m.ram_gb!=null?' · '+m.ram_gb+' GB ram':'')+(m.pinned?' · pinned':'')+
+        (m.params?' · '+m.params:'');
+      else fp=keep?'⏳ loading into VRAM…':'○ off — not resident';
+    }
+    return `
+    <div class="card m" data-id="${esc(m.id)}" style="cursor:pointer">
+      <h3><span>${esc(m.name||m.id)}</span>
+        ${local?`<span class="sw ${keep?'on':''}" data-keep="${esc(m.id)}"
+             title="power: ON = load+pin in VRAM, OFF = unload"></span>`
+              :`<span class="tag">${esc(m.engine||'')}</span>`}
+      </h3>
+      <div class="desc">${esc(m.desc||'')||'&nbsp;'}</div>
+      ${local?`<div class="desc" style="margin-top:4px;color:${res?'var(--ok)':keep?'var(--warn)':'var(--dim)'}">${fp}</div>`:''}
+      <div class="row" style="margin-top:9px">
+        ${m.size?'<span class="tag">'+(m.size>1e9?(m.size/1e9).toFixed(1)+' GB':(m.size/1e6|0)+' MB')+'</span>':''}
+        ${m.tools?'<span class="tag">tools</span>':''}
+        ${m.vision?'<span class="tag">vision</span>':''}
+        ${local?`<span class="tag ${keep?'def':''}">${keep?'ON':'OFF'}</span>`:''}
+        ${m.default?'<span class="tag def">DEFAULT</span>':''}
+        ${m.agent?'<span class="tag ag">AGENT</span>':''}
+        ${m.tier==='deep'?'<span class="tag def">DEEP</span>':''}
+      </div>
+    </div>`;}).join('');
+  $$('#mlist .card').forEach(c=>c.onclick=async()=>{
+    await fetch('/api/models/switch',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:c.dataset.id})}); loadModels(); status();
+  });
+  /* power switch: load the model into VRAM (ON) / unload it (OFF) */
+  $$('#mlist [data-keep]').forEach(s=>{ s.onclick=async ev=>{
+    ev.stopPropagation();
+    const id=s.dataset.keep, on=!s.classList.contains('on');
+    s.classList.add('busy');
+    try{
+      const r=await fetch('/api/models/keep',{method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({model:id,on})}).then(x=>x.json());
+      if(r.ok===false)alert(r.error||'switch failed');
+    }catch(e){alert('switch failed: '+e);}
+    loadModels(); status(); resources();
+  };});
+  $('#cmodel').innerHTML='<option value="">tower default</option>'+
+    d.models.map(m=>`<option>${esc(m.id)}</option>`).join('');
+}
+$('#fbsw').onclick=async()=>{
+  const on=!$('#fbsw').classList.contains('on');
+  await fetch('/api/models/fallback',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({enabled:on})}); $('#fbsw').classList.toggle('on',on);
+};
+
+/* ── resource meters (CPU / RAM / GPU / VRAM) ── */
+function meter(id,label,val,extra){
+  const el=$(id); if(!el)return;
+  const pct=val==null?0:Math.max(0,Math.min(100,val));
+  const cls=pct>90?'crit':pct>75?'hot':'';
+  const txt=val==null?'—':Math.round(pct)+'%';
+  el.innerHTML=`<div class="top"><span>${label}</span><b>${txt}${extra?' · '+extra:''}</b></div>
+    <div class="bar"><i class="${cls}" style="width:${pct}%"></i></div>`;
+}
+async function resources(){
+  try{
+    const r=await fetch('/api/resources').then(j);
+    const c=r.cpu||{}, m=r.mem||{}, g=r.gpu||{};
+    meter('#m-cpu','CPU'+(c.ghz?' '+c.ghz+'GHz':''),c.pct,
+          c.threads?c.threads+' threads':'');
+    meter('#m-ram','RAM'+(m.total_gb?' '+m.used_gb+'/'+m.total_gb+' GB':''),m.pct,
+          m.swap_pct?'swap '+m.swap_pct+'%':'');
+    meter('#m-gpu','GPU'+(g.present?' '+(g.name||'').replace(/^NVIDIA /,''):''),
+          g.present?g.util_pct:null,
+          g.present?[g.temp_c!=null?g.temp_c+'°C':null,g.power_w!=null?g.power_w+'W':null]
+            .filter(Boolean).join(' '):'not found');
+    meter('#m-vram','VRAM'+(g.present?' '+g.vram_used_gb+'/'+g.vram_total_gb+' GB':''),
+          g.present?g.vram_pct:null);
+    const tot=r.model_totals||{}, lm=r.models||[];
+    $('#resmodels').innerHTML=lm.length
+      ? `<b>${tot.loaded} model${tot.loaded>1?'s':''} resident</b> · ${tot.vram_gb} GB VRAM · ${tot.ram_gb} GB RAM &nbsp;`+
+        lm.map(x=>`<span class="tag">${esc(x.name||'')} ${x.vram_gb!=null?x.vram_gb+'G':''}${x.pinned?' · pinned':''}</span>`).join(' ')
+      : 'no models loaded — flip a switch below to pull one into VRAM';
+    $('#reswhen').textContent=new Date().toLocaleTimeString();
+  }catch(e){}
+}
+setInterval(resources,3000); resources();
+
+/* ── apps ── */
+async function loadApps(){
+  const d=await fetch('/api/apps').then(j);
+  const st={running:['ok','RUNNING'],stopped:['bad','off'],unknown:['warn','?']};
+  $('#applist').innerHTML=d.apps.map(a=>{
+    const [c,lbl]=st[a.status]||['warn','?'];
+    return `<div class="card">
+      <h3><span>${a.icon||''} ${esc(a.name)}</span><span class="tag">${esc(a.category||'')}</span></h3>
+      <div class="desc">${esc(a.desc||'')}</div>
+      <div class="row" style="margin-top:11px">
+        <span class="kv"><span class="dot ${c}"></span><b>${lbl}</b></span>
+        <span style="flex:1"></span>
+        <button class="btn" data-a="${a.id}" data-o="1" ${a.status==='running'?'disabled':''}>Start</button>
+        <button class="btn dgr" data-a="${a.id}" data-o="0" ${a.status!=='running'?'disabled':''}>Stop</button>
+        ${a.url?`<a class="btn" href="${esc(a.url)}" target="_blank">Open</a>`:''}
+      </div>
+      ${a.note?`<div class="desc" style="margin-top:7px;color:var(--warn)">${esc(a.note)}</div>`:''}
+    </div>`;}).join('');
+  $$('#applist button[data-a]').forEach(b=>b.onclick=async()=>{
+    b.disabled=true;
+    await fetch(`/api/apps/${b.dataset.a}/${b.dataset.o==='1'?'launch':'stop'}`,{method:'POST',
+      headers:{'Content-Type':'application/json'},body:'{}'});
+    setTimeout(loadApps,1400);
+  });
+  $('#applog').textContent=(d.log||[]).join('\n')||'—';
+}
+
+/* ── keys ── */
+async function loadKeys(){
+  const d=await fetch('/api/keys').then(j);
+  $('#ktable tbody').innerHTML=d.providers.map(p=>`<tr>
+    <td><span class="dot ${p.alive?'ok':p.enabled?'bad':'warn'}"></span></td>
+    <td><b>${esc(p.id)}</b></td><td>${esc(p.key_mask||'—')}</td>
+    <td style="color:var(--dim)">${esc(p.base)}</td><td>${p.models||0}</td>
+    <td style="color:var(--dim)">${p.checked?new Date(p.checked*1000).toLocaleTimeString():'—'}</td>
+    <td style="color:var(--dim)">${esc(p.alive?'alive ✓':(p.error||p.note||'—')).slice(0,80)}</td>
+  </tr>`).join('');
+}
+$('#krecheck').onclick=async e=>{e.target.disabled=true;e.target.textContent='checking…';
+  await fetch('/api/keys/recheck',{method:'POST'}); await loadKeys();
+  e.target.disabled=false;e.target.textContent='↻ Recheck all keys';};
+
+/* ── logs ── */
+async function loadLogs(){
+  const d=await fetch('/api/logs?n=120').then(j);
+  $('#logbox').innerHTML=Object.entries(d).map(([k,v])=>
+    `<div class="card"><h3>${esc(k)}</h3><div class="log">${esc((v||[]).join('\n')||'empty')}</div></div>`).join('');
+}
+$('#lref').onclick=loadLogs;
+
+/* ── operator agent + approval gate ── */
+let busy=false;
+$('#atgo').onclick=async()=>{
+  if(busy)return; const task=$('#atin').value.trim(); if(!task)return;
+  busy=true; $('#atin').value=''; $('#atgo').disabled=true;
+  const S=$('#astream'); S.innerHTML='';
+  const ev=(cls,html)=>{const d=document.createElement('div');d.className='evt '+cls;d.innerHTML=html;
+    S.appendChild(d);S.scrollIntoView({block:'nearest'});return d;};
+  const txt=ev('','<span class="spin"></span> starting…');
+  let answer='';
+  try{
+    const r=await fetch('/api/agent/run',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({task,mode:$('#amode-sel').value})});
+    const rd=r.body.getReader(),dec=new TextDecoder();let buf='';
+    while(1){const {value,done}=await rd.read();if(done)break;
+      buf+=dec.decode(value,{stream:true});const parts=buf.split('\n\n');buf=parts.pop();
+      for(const part of parts){const line=part.trim();if(!line.startsWith('data:'))continue;
+        let e;try{e=JSON.parse(line.slice(5));}catch{continue;}
+        handleEv(e,ev,txt);}
+    }
+  }catch(err){ev('bad','✕ '+esc(err));}
+  busy=false;$('#atgo').disabled=false;
+};
+function handleEv(e,ev,txt){
+  switch(e.type){
+    case 'start': ev('','▶ mode <b>'+esc(e.mode)+'</b> · model '+esc(e.model||''));break;
+    case 'model_meta': ev('','🧠 '+esc(e.provider||'')+(e.tps?' · '+Math.round(e.tps)+' tok/s':'')+
+      (e.confidence!=null?' · conf '+Number(e.confidence).toFixed(2):'')+(e.reasoning?' — '+esc(e.reasoning):''));break;
+    case 'tool_call': ev(e.gated?'gate':'','🔧 '+esc(e.name)+'('+esc(JSON.stringify(e.args)).slice(0,300)+')'+
+      (e.gated?' <b>→ needs your approval</b>':'')+(e.blocked?' <b>→ blocked by safety rule</b>':''));break;
+    case 'tool_result': ev('good','⤷ '+esc(JSON.stringify(e.result)).slice(0,500));break;
+    case 'approval_pending': showGate(e.approval,ev);break;
+    case 'approval_result': ev(e.status==='approved'?'good':'bad',
+        'approval '+esc(e.status)+' → '+esc(e.result));break;
+    case 'note': ev('','ℹ '+esc(e.text));break;
+    case 'error': ev('bad','✕ '+esc(e.error));break;
+    case 'done': ev('good','✔ done ('+(e.turns||1)+' turns)');break;
+  }
+  if(e.type==='done'&&e.final){
+    const d=document.createElement('div');d.className='card';d.style.marginTop='12px';
+    d.innerHTML='<h3>Answer</h3><div style="white-space:pre-wrap">'+esc(e.final)+'</div>';
+    $('#astream').appendChild(d);
+  }
+}
+function showGate(a,ev){
+  const d=document.createElement('div');d.className='gatebox';
+  const tool=a.tool||a.name||'';
+  if(tool==='ask_user'){
+    /* the Operator is asking a question — free text reply, or yes/no */
+    d.innerHTML=`<div class="q">💬 The Operator asks you</div>
+      <div class="kv" style="margin-bottom:9px;white-space:pre-wrap">${esc(a.task||'')}</div>
+      <div class="row"><input type="text" id="g-ans" placeholder="Type your answer…"
+        autocomplete="off" style="flex:1">
+        <button class="btn pri" id="g-a">Send answer</button></div>
+      <div class="row" style="margin-top:7px">
+        <button class="btn" id="g-yes">✔ yes</button>
+        <button class="btn dgr" id="g-no">✘ no</button></div>`;
+    $('#astream').appendChild(d); d.scrollIntoView({block:'nearest'});
+    const post=async(approve,answer)=>{
+      await fetch('/api/approvals/'+(a.id),{method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({approve,answer:answer||''})});
+      d.innerHTML='<div class="kv">answer sent — the Operator continues…</div>';};
+    const inp=d.querySelector('#g-ans');
+    d.querySelector('#g-a').onclick=()=>post(true,(inp.value||'').trim());
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter')post(true,(inp.value||'').trim());});
+    d.querySelector('#g-yes').onclick=()=>post(true,'');
+    d.querySelector('#g-no').onclick=()=>post(false);
+    setTimeout(()=>inp.focus(),50);
+    return;
+  }
+  d.innerHTML=`<div class="q">⚠ Approval required — ${esc(tool)}</div>
+    <pre>${esc(JSON.stringify(a.args||{},null,1))}</pre>
+    <div class="kv" style="margin-bottom:9px">task: ${esc((a.task||'').slice(0,200))}</div>
+    <div class="row"><button class="btn pri" id="g-y">✔ Approve</button>
+    <button class="btn dgr" id="g-n">✘ Deny</button></div>`;
+  $('#astream').appendChild(d); d.scrollIntoView({block:'nearest'});
+  const decide=async ok=>{await fetch('/api/approvals/'+(a.id),{method:'POST',
+    headers:{'Content-Type':'application/json'},body:JSON.stringify({approve:ok})});
+    d.querySelector('.row').innerHTML='<span class="kv">'+(ok?'approved — running…':'denied')+'</span>';};
+  d.querySelector('#g-y').onclick=()=>decide(true);
+  d.querySelector('#g-n').onclick=()=>decide(false);
+}
+/* ── library: skills + rules ── */
+let libInit=false;
+async function loadLibrary(){
+  const d=await fetch('/api/skills?limit=60').then(j);
+  $('#libstat').textContent=d.stats.total+' skills · '+
+    Object.keys(d.stats.categories).length+' categories';
+  if(!libInit){
+    $('#libcat').innerHTML='<option value="">all categories</option>'+
+      Object.entries(d.stats.categories).sort((a,b)=>b[1]-a[1])
+        .map(([c,n])=>`<option value="${esc(c)}">${esc(c)} (${n})</option>`).join('');
+    $('#libcat').onchange=()=>searchLib('');
+    libInit=true;
+  }
+  renderLib(d.skills.slice(0,60));
+  const r=await fetch('/api/rules').then(j);
+  $('#rulelist').innerHTML=r.rules.map(x=>`
+    <div class="mrow" data-rule="${esc(x.id)}">
+      <span class="tag ${x.gate_mode==='hard'?'def':''}">${x.num} ${x.gate_mode}</span>
+      <span class="nm">${esc(x.title.replace(/^Rule \d+ — /,''))}</span>
+      <span class="tag">${esc(x.kind)}</span>
+    </div>`).join('');
+  $$('#rulelist .mrow').forEach(el=>el.onclick=async()=>{
+    const d2=await fetch('/api/rules/'+el.dataset.rule).then(j);
+    showDetail(d2.title,'['+d2.kind+' · gate '+d2.gate_mode+' · '+d2.lifecycle+'] '+
+      d2.statement,d2.content,d2.path);
+  });
+}
+function renderLib(items){
+  $('#liblist').innerHTML=items.map(s=>`
+    <div class="mrow" data-skill="${esc(s.name)}">
+      <span class="tag">${esc(s.category)}</span>
+      <span class="nm">${esc(s.name)}</span>
+      ${s.score!=null?`<span class="tag def">${s.score}</span>`:''}
+    </div>`).join('')||'<div class="kv">no match</div>';
+  $$('#liblist .mrow').forEach(el=>el.onclick=async()=>{
+    const d=await fetch('/api/skills/'+el.dataset.skill).then(j);
+    if(d.error){showDetail(d.error,'',JSON.stringify(d.nearest||[]),'');return;}
+    showDetail(d.name+'  ['+d.category+']',d.desc,d.content,d.path,d.truncated);
+  });
+}
+function showDetail(title,meta,body,path,trunc){
+  $('#libdetail').innerHTML=`<div class="card">
+    <h3>${esc(title)}</h3>
+    <div class="desc">${esc(meta||'')}</div>
+    <div class="kv" style="margin:7px 0">${esc(path||'')}${trunc?' · (truncated)':''}</div>
+    <div class="log" style="max-height:50vh">${esc(body||'')}</div></div>`;
+  $('#libdetail').scrollIntoView({block:'nearest'});
+}
+async function searchLib(){ const q=$('#libq').value.trim();
+  if(!q){loadLibrary();return;}
+  const d=await fetch('/api/skills?q='+encodeURIComponent(q)+'&limit=40').then(j);
+  renderLib(d.skills);
+}
+$('#libq').addEventListener('keydown',e=>{if(e.key==='Enter')searchLib();});
+$('#libq').addEventListener('input',()=>{clearTimeout(window._lt);
+  window._lt=setTimeout(searchLib,300);});
+$('#t-library').addEventListener('click',()=>{if(!window._libSeen){window._libSeen=1;loadLibrary();}});
+document.querySelector('[data-t="library"]').addEventListener('click',loadLibrary);
+
+loadModels();
+</script>
+</body>
+</html>

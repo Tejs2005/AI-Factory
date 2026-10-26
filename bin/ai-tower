@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+# ai-tower — AI Factory control plane CLI
+#   ./bin/ai-tower up|down|status|models|switch <model>|apps|keys|chat|run|open|logs
+# The app dir defaults to this repo; override with AI_FACTORY_HOME=…
+set -euo pipefail
+
+APP="${AI_FACTORY_HOME:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+PORT=7425
+BASE="http://127.0.0.1:$PORT"
+PIDFILE="$APP/logs/tower.pid"
+
+up() {
+  if curl -fsS -m 2 "$BASE/health" >/dev/null 2>&1; then
+    echo "tower already up  ->  $BASE"; return 0
+  fi
+  mkdir -p "$APP/logs"
+  cd "$APP"
+  nohup python3 -m tower.server >>"$APP/logs/server.out" 2>&1 &
+  echo $! > "$PIDFILE"
+  for _ in $(seq 1 25); do
+    sleep 0.4
+    if curl -fsS -m 2 "$BASE/health" >/dev/null 2>&1; then
+      echo "tower UP  ->  $BASE   (dashboard: $BASE/)"; return 0
+    fi
+  done
+  echo "FAILED to start - last log lines:"; tail -20 "$APP/logs/server.out"; return 1
+}
+
+down() {
+  if [[ -f "$PIDFILE" ]] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+    kill "$(cat "$PIDFILE")" && echo "tower stopped"
+    rm -f "$PIDFILE"
+  else
+    pkill -f "tower.[s]erver" 2>/dev/null && echo "tower stopped" || echo "tower not running"
+  fi
+}
+
+case "${1:-status}" in
+  up)     up ;;
+  down)   down ;;
+  restart) down; sleep 1; up ;;
+  status)
+    curl -fsS -m 3 "$BASE/api/status" 2>/dev/null | python3 -m json.tool \
+      || { echo "tower is DOWN - run: ./bin/ai-tower up"; exit 1; } ;;
+  health) curl -fsS -m 3 "$BASE/health"; echo ;;
+  models)
+    up >/dev/null
+    curl -fsS -m 5 "$BASE/api/models" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+for m in d["models"]:
+    tag = []
+    if m.get("default"): tag.append("DEFAULT")
+    if m.get("agent"):   tag.append("AGENT")
+    if m.get("tier") == "deep": tag.append("DEEP")
+    print("  %-44s %-8s %s" % (m["id"], m.get("engine", ""), " ".join(tag)))
+print("\ndefault: %s" % d["default_model"])
+print("agent:   %s" % d["agent_model"])' ;;
+  switch)
+    [[ $# -ge 2 ]] || { echo "usage: ai-tower switch <model-id>"; exit 1; }
+    curl -fsS -m 3 -X POST "$BASE/api/models/switch" -H "Content-Type: application/json" \
+      -d "{\"model\":\"$2\"}"; echo ;;
+  fallback)
+    curl -fsS -m 3 -X POST "$BASE/api/models/fallback" -H "Content-Type: application/json" \
+      -d "{\"enabled\":${2:-true}}"; echo ;;
+  apps)
+    up >/dev/null
+    curl -fsS -m 5 "$BASE/api/apps" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+for a in d["apps"]:
+    print("  %-9s %s" % (a["status"], a["name"]))' ;;
+  keys)
+    up >/dev/null
+    curl -fsS -m 10 "$BASE/api/keys" | python3 -c '
+import json, sys
+for p in json.load(sys.stdin)["providers"]:
+    mark = "OK " if p.get("alive") else ("dead" if p.get("enabled") else " -- ")
+    print("  %s %-12s %-20s %s" % (mark, p["id"], p.get("key_mask", "-"), p.get("error") or ""))' ;;
+  open)
+    up; xdg-open "$BASE/" >/dev/null 2>&1 || sensible-browser "$BASE/" >/dev/null 2>&1 || true ;;
+  logs) tail -n "${2:-60}" "$APP/logs/server.out" 2>/dev/null || echo "no logs" ;;
+  chat)
+    up
+    shift; [[ $# -gt 0 ]] || { echo "usage: ai-tower chat \"prompt\""; exit 1; }
+    python3 -c 'import json,sys; print(json.dumps({"prompt": sys.argv[1]}))' "$*" > /tmp/.tower-msg.json
+    curl -sN -X POST "$BASE/api/chat" -H "Content-Type: application/json" \
+      --data-binary @/tmp/.tower-msg.json \
+    | sed -n "s/^data: //p" | python3 -c '
+import json, sys
+for line in sys.stdin:
+    try: e = json.loads(line)
+    except Exception: continue
+    if e.get("type") == "token":   sys.stdout.write(e["text"]); sys.stdout.flush()
+    elif e.get("type") == "error": sys.stdout.write("\n[error] %s" % e["error"])
+print()' ;;
+  run)
+    up
+    shift; [[ $# -gt 0 ]] || { echo "usage: ai-tower run \"task\""; exit 1; }
+    python3 -c 'import json,sys; print(json.dumps({"task": sys.argv[1], "mode": "auto"}))' "$*" > /tmp/.tower-task.json
+    curl -sN -X POST "$BASE/api/agent/run" -H "Content-Type: application/json" \
+      --data-binary @/tmp/.tower-task.json \
+    | sed -n "s/^data: //p" | python3 -c '
+import json, sys
+for line in sys.stdin:
+    try: e = json.loads(line)
+    except Exception: continue
+    t = e.get("type")
+    if   t == "tool_call":         print("\n  [tool] %s %s" % (e["name"], json.dumps(e.get("args"))[:200]), flush=True)
+    elif t == "approval_pending":  print("\n  [GATE] approval needed -> decide in the dashboard", flush=True)
+    elif t == "approval_result":   print("  [gate] %s" % e["status"], flush=True)
+    elif t == "tool_result":       print("  [res]  %s" % str(e.get("result"))[:300], flush=True)
+    elif t == "error":             print("\n  [error] %s" % e["error"], flush=True)
+    elif t == "done":              print("\n  [done] %s" % str(e.get("final", ""))[:2000])
+print()' ;;
+  *) cat <<'HELP'
+ai-tower - AI Factory control plane (dashboard + OpenAI gateway + Operator)
+
+  ./bin/ai-tower up              start it (127.0.0.1:7425)
+  ./bin/ai-tower status          engine + model status
+  ./bin/ai-tower models          list models (DEFAULT/AGENT/DEEP)
+  ./bin/ai-tower switch <id>     set the default model
+  ./bin/ai-tower apps            registry with running state
+  ./bin/ai-tower keys            provider key health (masked, never values)
+  ./bin/ai-tower chat "prompt"   one-shot chat through the gateway
+  ./bin/ai-tower run "task"      run the Operator agent (approval-gated)
+  ./bin/ai-tower open            open the dashboard
+  ./bin/ai-tower down            stop it
+HELP
+esac

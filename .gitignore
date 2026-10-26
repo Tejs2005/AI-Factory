@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+logs/
+config/tower.json
+config/skills-index.json
+static/audio/
+static/shots/
+.ruff_cache/
+*.pid
+.DS_Store

@@ -1,0 +1,291 @@
+[
+ {
+  "name": "list_apps",
+  "description": "List every app registered in the tower with its status (running/available).",
+  "parameters": {
+   "type": "object",
+   "properties": {}
+  }
+ },
+ {
+  "name": "app_status",
+  "description": "Get status and details of one registered app.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "app_id": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "app_id"
+   ]
+  }
+ },
+ {
+  "name": "tower_status",
+  "description": "Health of all AI engines and cloud keys: ollama, localai, needle, providers.",
+  "parameters": {
+   "type": "object",
+   "properties": {}
+  }
+ },
+ {
+  "name": "search_web",
+  "description": "Search the web (DuckDuckGo) and get top results with titles and URLs.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "query": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "query"
+   ]
+  }
+ },
+ {
+  "name": "search_skills",
+  "description": "Search VRTX-BRAIN's skills library (580+ how-to skills: dev, game-dev, 3D/CAD, security, media, business, writing...). Use before doing any specialized task to find an existing playbook.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "query": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "query"
+   ]
+  }
+ },
+ {
+  "name": "read_skill",
+  "description": "Load the full instructions of a skill by its name (from search_skills). Returns the SKILL.md playbook.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "name": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "name"
+   ]
+  }
+ },
+ {
+  "name": "list_rules",
+  "description": "List VRTX-BRAIN's brain rules (the constitution you operate under): id, kind, gate_mode and one-line statement. hard = must obey.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "hard_only": {
+     "type": "boolean"
+    }
+   }
+  }
+ },
+ {
+  "name": "read_rule",
+  "description": "Read one brain rule in full by number or id (e.g. '2' or '002-secrets').",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "rule": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "rule"
+   ]
+  }
+ },
+ {
+  "name": "http_get",
+  "description": "Fetch a URL with GET and return text (truncated). Read-only.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "url": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "url"
+   ]
+  }
+ },
+ {
+  "name": "http_request",
+  "description": "Send an HTTP request (method, url, optional json body) to an app's API. Non-GET needs approval.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "method": {
+     "type": "string"
+    },
+    "url": {
+     "type": "string"
+    },
+    "body": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "method",
+    "url"
+   ]
+  }
+ },
+ {
+  "name": "launch_app",
+  "description": "Start a registered app (jan, browseros, gimp, obs, audacity, localai, needle...). Needs human approval.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "app_id": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "app_id"
+   ]
+  }
+ },
+ {
+  "name": "stop_app",
+  "description": "Stop a running registered app. Needs human approval.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "app_id": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "app_id"
+   ]
+  }
+ },
+ {
+  "name": "run_shell",
+  "description": "Run a shell command on the laptop. Needs human approval. Prefer other tools first.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "command": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "command"
+   ]
+  }
+ },
+ {
+  "name": "ask_user",
+  "description": "Ask the human a clarifying question. The answer arrives as tool output.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "question": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "question"
+   ]
+  }
+ },
+ {
+  "name": "browser_open",
+  "description": "Open a URL in the tower's browser (headed \u2014 the human watches). Returns the final url, title and load time. Payment/trading sites refused.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "url": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "url"
+   ]
+  }
+ },
+ {
+  "name": "browser_read",
+  "description": "Read the current page: plain text, title, url and top links. Call after browser_open.",
+  "parameters": {
+   "type": "object",
+   "properties": {}
+  }
+ },
+ {
+  "name": "browser_click",
+  "description": "Click a link or button on the current page by css selector OR its visible text (e.g. 'Next' or '#submit').",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "target": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "target"
+   ]
+  }
+ },
+ {
+  "name": "browser_type",
+  "description": "Type text into a field (selector or placeholder text). Does NOT submit.",
+  "parameters": {
+   "type": "object",
+   "properties": {
+    "target": {
+     "type": "string"
+    },
+    "text": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "target",
+    "text"
+   ]
+  }
+ },
+ {
+  "name": "browser_back",
+  "description": "Go back in browser history.",
+  "parameters": {
+   "type": "object",
+   "properties": {}
+  }
+ },
+ {
+  "name": "browser_shot",
+  "description": "Screenshot the current page. Returns a /static/shots/\u2026 url to show the human.",
+  "parameters": {
+   "type": "object",
+   "properties": {}
+  }
+ },
+ {
+  "name": "browser_submit",
+  "description": "Submit the form currently focused (press Enter). Creates a server-side effect \u2014 needs human approval.",
+  "parameters": {
+   "type": "object",
+   "properties": {}
+  }
+ },
+ {
+  "name": "browser_tabs",
+  "description": "List the browser's open tabs with their urls.",
+  "parameters": {
+   "type": "object",
+   "properties": {}
+  }
+ }
+]
