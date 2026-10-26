@@ -205,7 +205,12 @@ async def api_chat(req: Request):
         parts = []
         async for chunk in router.chat_stream({"model": model, "messages": history}):
             if "tower" in chunk:
-                yield chunk
+                # the router's closing {"tower": {"done": true}} must NOT reach
+                # the dashboard: the chat renderer treats a tower event as the
+                # "who answered" label and would wipe the finished reply
+                t = chunk.get("tower")
+                if not (isinstance(t, dict) and t.get("done")):
+                    yield chunk
                 continue
             if "error" in chunk:
                 yield chunk
